@@ -28,8 +28,17 @@ create table if not exists public.orders (
   bags text not null default '',
   trash_bag text not null default '',
   allergy text not null default '',
+  remarks text not null default '',
+  image_path text,
   created_at timestamptz not null default now()
 );
+
+alter table public.orders add column if not exists remarks text not null default '';
+alter table public.orders add column if not exists image_path text;
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('order-forms', 'order-forms', false, 15728640, array['image/jpeg','image/png','application/pdf'])
+on conflict (id) do update set public=false, file_size_limit=15728640, allowed_mime_types=array['image/jpeg','image/png','application/pdf'];
 
 create index if not exists orders_group_date_idx on public.orders(group_id, delivery_date);
 
@@ -40,6 +49,16 @@ returns boolean language sql stable security definer set search_path = '' as $$
     where m.group_id = p_group_id and m.user_id = auth.uid()
   );
 $$;
+
+drop policy if exists order_forms_member_read on storage.objects;
+create policy order_forms_member_read on storage.objects for select to authenticated
+using (bucket_id = 'order-forms' and public.is_order_group_member(((storage.foldername(name))[1])::uuid));
+drop policy if exists order_forms_member_insert on storage.objects;
+create policy order_forms_member_insert on storage.objects for insert to authenticated
+with check (bucket_id = 'order-forms' and public.is_order_group_member(((storage.foldername(name))[1])::uuid));
+drop policy if exists order_forms_member_delete on storage.objects;
+create policy order_forms_member_delete on storage.objects for delete to authenticated
+using (bucket_id = 'order-forms' and public.is_order_group_member(((storage.foldername(name))[1])::uuid));
 
 create or replace function public.create_order_group(p_name text)
 returns table(group_id uuid, invite_code text)
