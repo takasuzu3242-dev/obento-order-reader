@@ -32,20 +32,17 @@ fileInputs.forEach(input=>input.addEventListener('change',()=>input.files[0]&&se
 function setFile(f){const isPdf=f.type==='application/pdf'||f.name.toLowerCase().endsWith('.pdf'),isImage=f.type.startsWith('image/')||/\.(jpe?g)$/i.test(f.name);if(!isPdf&&!isImage){$('status').textContent='PDFまたはJPEGファイルを選んでください';return}for(const input of fileInputs)if(input!==f)input.value='';$('newOrderPanel').classList.remove('hidden');$('results').classList.add('hidden');$('copied').textContent='';for(const id of ['product','store','count','date','time','tea','packing','bags','trash','allergy'])$(id).value='';selected=f;$('preview').style.display=isImage?'block':'none';$('pdfPreview').style.display=isPdf?'block':'none';$('selectedFile').classList.add('hidden');if(isPdf){$('pdfName').textContent=f.name;$('preview').removeAttribute('src')}else{$('preview').src=URL.createObjectURL(f)}$('read').disabled=false;$('read').textContent=isPdf?'PDFを読み取る':'写真を読み取る';$('status').textContent=f.name+' を選択しました';$('newOrderPanel').scrollIntoView({behavior:'smooth',block:'start'})}
 $('newOrder').onclick=()=>{$('newOrderPanel').classList.remove('hidden');$('newOrderPanel').scrollIntoView({behavior:'smooth',block:'start'})};
 function clean(s){return s.replace(/[\s　]+/g,' ').trim()}
-function parse(text){let t=text.replace(/\r/g,'');const put=(id,v)=>{if(v)$ (id).value=v};
- let m=t.match(/お届け日[\s\S]{0,60}?([0-9０-９]{1,2}月[0-9０-９]{1,2}日(?:\s*[（(][^）)]*[）)])?)/); if(m)put('date',clean(m[1]));
- m=t.match(/お届け日[\s\S]{0,80}?([0-2]?[0-9]:[0-5][0-9])/);if(m)put('time',m[1]);
- m=t.match(/(\d{1,3})\s*個/);if(m)put('count',m[1]+'個');
- const lines=t.split('\n').map(clean).filter(Boolean);
- m=lines.find(x=>/店名/.test(x));if(m){let v=m.replace(/^.*店名\s*/,'').trim();if(v)put('store',v)}
- m=lines.find(x=>/お弁当名/.test(x));if(m){let v=m.replace(/^.*お弁当名\s*/,'').trim();if(v)put('product',v)}
- // Use OCR text heuristics for common fields; uncertain values stay clearly marked.
- if(/氷見牛屋/.test(t))put('store','氷見牛屋'); else if(/とやま弁当/.test(t))put('store','とやま弁当');else if(/恵比寿膳/.test(t))put('store','恵比寿膳');else if(/富匠/.test(t))put('store','富匠');
- if(/おーいお茶|お〜いお茶/.test(t))put('tea','おーいお茶');else if(/お茶[\s\S]{0,40}(?:0円|無料)/.test(t))put('tea','無料');
- if(/指定無し|指定なし/.test(t))put('packing','指定なし（おまかせ）');else if(/段ボール/.test(t))put('packing','段ボール');else if(/紙袋/.test(t))put('packing','紙袋');
- if(/小分け袋[\s\S]{0,40}(?:ご用意|必要|お願いします)/.test(t))put('bags','必要');else if(/小分け袋[\s\S]{0,40}(?:不要|いりません)/.test(t))put('bags','不要');
- if(/ゴミ袋[\s\S]{0,40}(?:必要|ご用意|お願いします)/.test(t))put('trash','必要');else if(/ゴミ袋[\s\S]{0,40}(?:不要|いりません)/.test(t))put('trash','不要');else if(/ゴミ袋/.test(t))put('trash','記載あり（要確認）');
- if(/アレルギー[\s　:：]*(?:なし|無|無し)/.test(t))put('allergy','なし');else if(/アレルギー/.test(t)){let a=lines.find(x=>/アレルギー/.test(x));put('allergy',a||'記載あり（要確認）')}else put('allergy','記載なし');
+function parse(text){const t=String(text).replace(/\r/g,'').replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0));const put=(id,v)=>{if(v)$(id).value=v};const lines=t.split('\n').map(clean).filter(Boolean);
+ let m=t.match(/(?:20\d{2}\s*年\s*)?\d{1,2}\s*月\s*\d{1,2}\s*日(?:\s*[（(][^）)]*[）)])?/);if(m)put('date',clean(m[0]));
+ const deliveryAt=t.search(/お届け(?:日時|日)/),deliveryText=t.slice(deliveryAt>=0?deliveryAt:0,(deliveryAt>=0?deliveryAt:0)+280);m=deliveryText.match(/([01]?\d|2[0-3])\s*:\s*([0-5]\d)/)||deliveryText.match(/([01]?\d|2[0-3])\s*時\s*([0-5]?\d)\s*分?/);if(m)put('time',`${String(m[1]).padStart(2,'0')}:${String(m[2]).padStart(2,'0')}`);
+ m=t.match(/(?:個数\s*)?(\d{1,3})\s*個/);if(m)put('count',m[1]+'個');
+ const storeNames=[['氷見牛屋','氷見牛屋'],['とやま弁当','とやま弁当'],['恵比寿膳','恵比寿膳'],['富匠','富匠']];for(const [needle,value] of storeNames)if(t.includes(needle)){put('store',value);break}if(!storeNames.some(([needle])=>t.includes(needle))){m=lines.find(x=>/店名/.test(x));if(m){const v=m.replace(/^.*店名\s*[:：]?\s*/,'').trim();if(v)put('store',v)}}
+ const productAt=lines.findIndex(x=>/(?:お弁当名|商品名)/.test(x));if(productAt>=0){let value=lines[productAt].replace(/^.*?(?:お弁当名|商品名)\s*[:：]?\s*/,'').split(/税込単価|税抜単価|金額×個数|（金額|\/\s*個数|／\s*個数|×\s*\d/)[0].trim();const stop=/税込単価|税抜単価|個数|お届け|ドリンク|お茶|店名|梱包|納品時荷姿|住所|電話|メール|その他要望/;for(let i=productAt+1;i<Math.min(lines.length,productAt+3)&&!stop.test(lines[i]);i++)value+=lines[i];value=value.replace(/\s+/g,'').replace(/清水見牛/g,'清〜氷見牛').replace(/チーズハンバー$/,'チーズハンバーグ');if(value)put('product',value)}
+ if(/おーいお茶|お〜いお茶|お~いお茶/.test(t))put('tea','おーいお茶');else if(/(?:無料[^\n]{0,16}お茶|お茶[^\n]{0,16}無料|0円[^\n]{0,16}お茶|お茶[^\n]{0,16}0円)/.test(t))put('tea','無料');
+ if(/段ボール|ダンボール/.test(t))put('packing','段ボール');else if(/紙袋/.test(t))put('packing','紙袋');else if(/指定\s*無|店舗\s*(?:お任せ|おまかせ)|おまかせ|お任せ/.test(t))put('packing','おまかせ');
+ const bagLine=lines.find(x=>/小分け袋/.test(x));if(bagLine){if(/不要|いりません|いらない|なし/.test(bagLine))put('bags','不要');else if(/必要|ご用意|用意|お願いします|お願いいたします|人数分/.test(bagLine))put('bags','必要');else put('bags','記載あり（要確認）')}
+ const trashLine=lines.find(x=>/ゴミ袋/.test(x));if(trashLine){if(/不要|いりません|いらない|なし/.test(trashLine))put('trash','不要');else if(/必要|ご用意|用意|お願いします|お願いいたします/.test(trashLine))put('trash','必要');else put('trash','記載あり（要確認）')}
+ const allergyLine=lines.find(x=>/アレルギー/.test(x));if(allergyLine){if(/(?:アレルギー\s*[:：]?\s*)(?:なし|無|無し)/.test(allergyLine))put('allergy','なし');else put('allergy',allergyLine.replace(/^.*アレルギー\s*[:：]?\s*/,'').trim()||'記載あり（要確認）')}else put('allergy','記載なし');
  for(const id of ['product','store','count','date','time','tea','packing','bags','trash'])if(!$(id).value)$(id).value='記載なし';
 }
 function progressLogger(m){if(m.status)$('status').textContent=m.status==='recognizing text'?'文字を読み取り中…':m.status==='loading language traineddata'?'日本語・数字の読み取りデータを準備中…':m.status==='loading tesseract core'?'読み取り機能を準備中…':m.status;if(m.progress)$('bar').style.width=Math.max(5,Math.round(m.progress*100))+'%'}
