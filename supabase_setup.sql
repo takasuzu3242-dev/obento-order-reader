@@ -23,6 +23,7 @@ create table if not exists public.orders (
   store text not null default '',
   product text not null default '',
   count text not null default '',
+  rice_type text not null default '',
   tea text not null default '',
   packing text not null default '',
   bags text not null default '',
@@ -33,6 +34,7 @@ create table if not exists public.orders (
   created_at timestamptz not null default now()
 );
 
+alter table public.orders add column if not exists rice_type text not null default '';
 alter table public.orders add column if not exists remarks text not null default '';
 alter table public.orders add column if not exists image_path text;
 
