@@ -157,7 +157,7 @@ $('#import').onchange=async e=>{try{const f=e.target.files[0];if(!f)return;if(f.
 window.addEventListener('beforeunload',e=>{if(dirty||settingsDirty){e.preventDefault();e.returnValue='';}});
 window.addEventListener('storage',e=>{if(e.key===STORAGE)message('別の画面でデータが更新されました。保存前にこの画面を再読み込みしてください。',true);});
 async function loadCloud(){
- if(!cloudGroup||cloudLoading||cloudBusy||dirty||settingsDirty)return;
+ if(!cloudGroup||cloudLoading||cloudBusy||dirty||settingsDirty||$('#day-box').classList.contains('open'))return;
  cloudLoading=true;const group=cloudGroup.id;
  try{let rows=[];for(let offset=0;;offset+=500){const {data,error}=await cloudClient.from('yaoya_records').select('key,value,revision,updated_at').eq('group_id',group).order('key').range(offset,offset+499);if(error)throw error;if(group!==cloudGroup?.id)return;rows.push(...data);if(data.length<500)break;}
  const next={settings:{supplier:'',fax:'',phone:'',contacts:structuredClone(PRESETCONTACTS)},orders:{}},versions={};
