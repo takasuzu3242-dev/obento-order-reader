@@ -14,7 +14,7 @@ function validateDraft(raw){
  return out;
 }
 const card=document.createElement('section');card.className='card';card.id='chappyImport';
-card.innerHTML='<h2 class="section-title">チャッピーの読み取りを取り込む</h2><p class="tip">チャットでもらった「確認画面を開く」リンクで、読み取り結果が入力されます。保存はご自身で押してください。PDF自体は添付されません。</p><details><summary>取り込みデータを貼り付ける</summary><div class="field"><label for="chappyData">チャッピーから受け取った取り込みデータ</label><textarea id="chappyData" rows="4" maxlength="16000"></textarea></div><button type="button" id="chappyApply">確認画面に入れる（保存しない）</button></details><p id="chappyStatus" role="status" aria-live="polite"></p>';
+card.innerHTML='<h2 class="section-title">チャッピーの読み取りを取り込む</h2><p class="tip">チャットでもらった「確認画面を開く」リンクで、読み取り結果が入力されます。保存はご自身で押してください。確認画面の「元の注文書PDFを添付」からPDFも付けられます。</p><details><summary>取り込みデータを貼り付ける</summary><div class="field"><label for="chappyData">チャッピーから受け取った取り込みデータ</label><textarea id="chappyData" rows="4" maxlength="16000"></textarea></div><button type="button" id="chappyApply">確認画面に入れる（保存しない）</button></details><p id="chappyStatus" role="status" aria-live="polite"></p>';
 $('calendarView').insertAdjacentElement('afterend',card);
 function apply(raw){
  const data=validateDraft(raw);
@@ -32,7 +32,7 @@ function apply(raw){
  $('status').textContent='チャッピーから入力しました（未保存・PDF添付なし）';
  $('copied').textContent='内容を確認して「共有カレンダーに登録」を押すと保存されます。';
  $('chappyStatus').textContent='確認画面に入力しました。まだ保存していません。';
- $('chappyData').value='';
+ $('chappyData').value='';$('chappyPdf').value='';$('chappyPdfStatus').textContent='';
  $('results').scrollIntoView({behavior:'smooth',block:'start'});return true;
 }
 $('chappyApply').onclick=()=>{try{apply(JSON.parse($('chappyData').value));}catch(e){$('chappyStatus').textContent='取り込めませんでした：'+e.message;}};
@@ -47,5 +47,21 @@ function importHash(){
   apply(JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes)));
  }catch(e){$('chappyStatus').textContent='取り込めませんでした：'+e.message;card.scrollIntoView({block:'start'});}
 }
+
+const attach=document.createElement('div');attach.className='field wide';
+attach.innerHTML='<label for="chappyPdf">元の注文書PDFを添付（入力内容はそのまま）</label><input id="chappyPdf" type="file" accept="application/pdf,.pdf"><p id="chappyPdfStatus" class="tip"></p>';
+$('results').querySelector('.grid').append(attach);
+$('chappyPdf').onchange=()=>{
+ if(orderSaveBusy||orderReadingBusy){$('chappyPdfStatus').textContent='処理の完了後に選び直してください。';$('chappyPdf').value='';return;}
+ const file=$('chappyPdf').files[0];if(!file)return;
+ if(!/\.pdf$/i.test(file.name)||file.size>15*1024*1024){$('chappyPdfStatus').textContent='15MB以下のPDFを選んでください。';$('chappyPdf').value='';return;}
+ selected=file;pendingOrderSave=null;
+ $('selectedFile').textContent=file.name;$('selectedFile').classList.remove('hidden');
+ $('pdfName').textContent=file.name;$('pdfPreview').style.display='block';$('preview').style.display='none';
+ $('chappyPdfStatus').textContent=file.name+' を添付しました。保存ボタンを押すまで送信・保存されません。';
+ $('status').textContent='入力内容＋注文書PDFを準備しました（未保存）';
+ $('chappyStatus').textContent='読み取り結果とPDFを準備しました。まだ保存していません。';
+};
+
 window.addEventListener('hashchange',importHash);importHash();
 })();
