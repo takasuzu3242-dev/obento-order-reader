@@ -60,9 +60,28 @@ function extractSalesAmount(text){
  return values.length===1?String(values[0]):'';
 }
 function savedSalesAmount(remarks){const m=String(remarks||'').match(/【さとみ売上合計】(\d+)円/);return m?Number(m[1]).toLocaleString('ja-JP')+'円':'未入力'}
+function normalizeOrderText(text){
+ let value=String(text??'').normalize('NFKC').replace(/\r/g,'').replace(/\u3000/g,' ');
+ // OCR inserts spaces inside Japanese labels and names. Preserve line and column boundaries.
+ for(let i=0;i<3;i++)value=value.replace(/([一-鿿ぁ-ゖァ-ヺー々])[ \t]+(?=[一-鿿ぁ-ゖァ-ヺー々])/g,'$1');
+ return value.replace(/(\d)[ \t]*,[ \t]*(?=\d{3}(?:\D|$))/g,'$1,');
+}
+function fallbackOrderFields(text){
+ const t=normalizeOrderText(text),lines=t.split('\n').map(x=>x.trim()).filter(Boolean),fields={};
+ const store=t.match(/(?:氷見牛屋|とやま弁当|恵比寿膳|富匠)(?:\s*大阪店)?/);if(store)fields.store=store[0].replace(/\s+/g,'');
+ const dateContext=t.match(/(?:お届け(?:日時|日)|配達日時)[\s\S]{0,160}/)?.[0];
+ if(dateContext){const date=dateContext.match(/(?:20\d{2}\s*年\s*)?\d{1,2}\s*月\s*\d{1,2}\s*日/);if(date)fields.date=date[0].replace(/\s+/g,'');const time=dateContext.match(/([01]?\d|2[0-3])\s*[:：]\s*([0-5]\d)/)||dateContext.match(/([01]?\d|2[0-3])\s*時\s*([0-5]?\d)\s*分/);if(time)fields.time=time[1].padStart(2,'0')+':'+time[2].padStart(2,'0')}
+ const at=lines.findIndex(x=>/^(?:商品名|お弁当名)/.test(x));
+ if(at>=0){const first=lines[at].replace(/^(?:商品名|お弁当名)\s*[:：]?\s*/,'').split(/税込単価|税抜単価/)[0],pieces=[first];
+ for(let i=at+1;i<Math.min(lines.length,at+4);i++){if(/税込|税抜|個数|オプション|ドリンク|備品|ご飯|合計|お届け|配達|店名|お茶|梱包|円\s*[×x]/.test(lines[i]))break;pieces.push(lines[i])}
+ const product=pieces.join('').replace(/\s+/g,'').replace(/^【[^】]*】|^\[[^\]]*\]/,'');if(product)fields.product=product;}
+ const quantity=t.match(/(?:個数|お弁当の個数)\s*[:：]?\s*(\d+)\s*個/);if(quantity)fields.count=quantity[1]+'個';
+ if(!/割引前/.test(t))fields.amount=extractSalesAmount(t);
+ return fields;
+}
 function extractOrderFields(text){
  // An attached delivery note repeats the order: only parse the first order page.
- const t=String(text).normalize('NFKC').replace(/\r/g,'').split(/【2ページ】|<PARSED TEXT FOR PAGE: 2/)[0],lines=t.split('\n').map(x=>x.trim()).filter(Boolean),flat=lines.join('\n'),result={},warnings=[];
+ const t=normalizeOrderText(text).split(/【2ページ】|<PARSED TEXT FOR PAGE: 2/)[0],lines=t.split('\n').map(x=>x.trim()).filter(Boolean),flat=lines.join('\n'),result={},warnings=[];
  const compact=s=>s.replace(/\s+/g,'');
  const cq=/CQREE|注文依頼シート/.test(t),fur=/ふるまい|商\s*品\s*情\s*報/.test(t);
  const delivery=flat.match(/(?:お届け日時|お届け日|配達日時)\s*([\s\S]{0,120})/);
@@ -114,19 +133,31 @@ function extractOrderFields(text){
  return {fields:result,warnings};
 }
 function parse(text){
- for(const id of ['product','store','count','rice','date','time','tea','packing','bags','trash','allergy','remarks','amount'])$(id).value='';
- $('deliveryDocument').value='要確認';$('invoiceRequired').value='要確認';
- const {fields,warnings}=extractOrderFields(text);for(const [id,value] of Object.entries(fields))$(id).value=value||'';
- for(const id of ['product','store','count','rice','date','time','tea','packing','bags','trash','allergy'])if(!$(id).value)$(id).value='記載なし';
- $('parseWarnings').textContent=warnings.join('\n');$('parseWarnings').classList.toggle('hidden',!warnings.length);
+ const normalized=normalizeOrderText(text);
+ if(!normalized.trim())throw new Error('文字を読み取れませんでした。ピント・明るさを確認して撮り直すか、元のPDFを選んでください。');
+ const fallback=fallbackOrderFields(normalized);
+ let extracted;
+ try{extracted=extractOrderFields(normalized)}catch(error){console.error('Order layout parsing failed',error);extracted={fields:{},warnings:['注文書の書式を認識できませんでした。読み取れた項目を表示しています。内容を確認してください。']}}
+ const fields={...extracted.fields},warnings=[...extracted.warnings];
+ for(const [id,value] of Object.entries(fallback)){if(!fields[id]&&value&&!(id==='amount'&&/割引前|一致しません/.test(warnings.join(' '))))fields[id]=value}
+ // Commit only after extraction succeeds, so a parser failure cannot erase the form.
+ for(const id of ['product','store','count','rice','date','time','tea','packing','bags','trash','allergy','remarks','amount']){const el=$(id);if(el)el.value=fields[id]||''}
+ for(const id of ['deliveryDocument','invoiceRequired'])if($(id))$(id).value=fields[id]||'要確認';
+ const recognized=['product','store','count','date','time','amount'].filter(id=>fields[id]).length;
+ if(!recognized)warnings.push('項目を自動入力できませんでした。下の「OCR読み取りテキスト」を確認し、入力欄に手入力するか元のPDFで再度お試しください。');
+ const box=$('parseWarnings');if(box){box.textContent=[...new Set(warnings)].join('\n');box.classList.toggle('hidden',!warnings.length)}
+ return recognized;
 }
 
 function progressLogger(m){if(m.status)$('status').textContent=m.status==='recognizing text'?'文字を読み取り中…':m.status==='loading language traineddata'?'日本語・数字の読み取りデータを準備中…':m.status==='loading tesseract core'?'読み取り機能を準備中…':m.status;if(m.progress)$('bar').style.width=Math.max(5,Math.round(m.progress*100))+'%'}
 async function makeOcrWorker(){const worker=await Tesseract.createWorker('jpn+eng',1,{logger:progressLogger});await worker.setParameters({tessedit_pageseg_mode:'6',preserve_interword_spaces:'1',user_defined_dpi:'300'});return worker}
-async function loadImageSource(file){if(window.createImageBitmap)return createImageBitmap(file);return new Promise((resolve,reject)=>{const image=new Image(),url=URL.createObjectURL(file);image.onload=()=>{URL.revokeObjectURL(url);resolve(image)};image.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('画像を開けませんでした。'))};image.src=url})}
+async function loadImageSource(file){
+ if(window.createImageBitmap){try{return await createImageBitmap(file)}catch(error){console.warn('ImageBitmap unavailable; using image decoder',error)}}
+ return new Promise((resolve,reject)=>{const image=new Image(),url=URL.createObjectURL(file);image.onload=()=>{URL.revokeObjectURL(url);resolve(image)};image.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('画像を開けませんでした。JPEG・PNGまたは元のPDFを選んでください。'))};image.src=url});
+}
 async function prepareOcrCanvas(source){const w=source.naturalWidth||source.width,h=source.naturalHeight||source.height;if(!w||!h)throw new Error('画像を読み込めませんでした。別の写真を選んでください。');const scale=Math.min(3,2600/w,3600/h),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(w*scale));canvas.height=Math.max(1,Math.round(h*scale));const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(source,0,0,canvas.width,canvas.height);const image=ctx.getImageData(0,0,canvas.width,canvas.height),d=image.data;let min=255,max=0;for(let i=0;i<d.length;i+=4){const g=Math.round(.299*d[i]+.587*d[i+1]+.114*d[i+2]);d[i]=d[i+1]=d[i+2]=g;if(g<min)min=g;if(g>max)max=g}const range=Math.max(80,max-min);for(let i=0;i<d.length;i+=4){const g=Math.max(0,Math.min(255,Math.round((d[i]-min)*255/range)));d[i]=d[i+1]=d[i+2]=g}ctx.putImageData(image,0,0);return canvas}
-async function recognizeDocument(source,worker){const canvas=await prepareOcrCanvas(source);try{await worker.setParameters({tessedit_pageseg_mode:'6'});let best=await worker.recognize(canvas);if((best.data.confidence||0)<78){await worker.setParameters({tessedit_pageseg_mode:'11'});const alternate=await worker.recognize(canvas);if((alternate.data.confidence||0)>(best.data.confidence||0))best=alternate;await worker.setParameters({tessedit_pageseg_mode:'6'})}return best.data.text}finally{canvas.width=0;canvas.height=0}}
- $('read').onclick=async()=>{if(!selected)return;$('read').disabled=true;$('status').textContent='日本語と数字を読み取り中… 初回は少し時間がかかります';$('bar').style.width='5%';let worker,bitmap,text;try{if(selected.type==='application/pdf'||selected.name.toLowerCase().endsWith('.pdf'))text=await readPdf(selected);else{worker=await makeOcrWorker();bitmap=await loadImageSource(selected);text=await recognizeDocument(bitmap,worker)}$('raw').textContent=text;parse(text);$('status').textContent='読み取り完了。入力欄を確認してください。読み違いがあれば修正できます。';$('results').classList.remove('hidden');$('results').scrollIntoView({behavior:'smooth',block:'start'})}catch(e){console.error(e);$('status').textContent=e.message||'読み取りに失敗しました。PDFまたはJPEGを確認して再度お試しください。'}finally{if(bitmap?.close)bitmap.close();if(worker)await worker.terminate();$('read').disabled=false}};
+async function recognizeDocument(source,worker){const canvas=await prepareOcrCanvas(source);try{await worker.setParameters({tessedit_pageseg_mode:'6'});let best=await worker.recognize(canvas);if((best.data.confidence||0)<78||!String(best.data.text||'').trim()){await worker.setParameters({tessedit_pageseg_mode:'11'});const alternate=await worker.recognize(canvas);if((alternate.data.confidence||0)>(best.data.confidence||0))best=alternate;await worker.setParameters({tessedit_pageseg_mode:'6'})}return best.data.text}finally{canvas.width=0;canvas.height=0}}
+ $('read').onclick=async()=>{if(!selected)return;$('read').disabled=true;$('status').textContent='日本語と数字を読み取り中… 初回は少し時間がかかります';$('bar').style.width='5%';let worker,bitmap,text;try{if(selected.type==='application/pdf'||selected.name.toLowerCase().endsWith('.pdf'))text=await readPdf(selected);else{worker=await makeOcrWorker();bitmap=await loadImageSource(selected);text=await recognizeDocument(bitmap,worker)}$('raw').textContent=text;const recognized=parse(text);$('status').textContent=recognized?'読み取り完了。入力欄を確認してください。読み違いがあれば修正できます。':'文字は読み取れましたが項目の確認が必要です。入力欄とOCR読み取りテキストを確認してください。';$('results').classList.remove('hidden');$('results').scrollIntoView({behavior:'smooth',block:'start'})}catch(e){console.error(e);$('status').textContent=e.message||'読み取りに失敗しました。PDFまたはJPEGを確認して再度お試しください。';$('results').classList.remove('hidden');if($('parseWarnings')){$('parseWarnings').textContent=$('status').textContent;$('parseWarnings').classList.remove('hidden')}}finally{if(bitmap?.close)bitmap.close();if(worker)await worker.terminate();$('read').disabled=false}};
 function pdfTextByLines(items){const rows=[];for(const item of items){if(!item.str||!item.str.trim())continue;const x=item.transform?.[4]||0,y=item.transform?.[5]||0;let row=rows.find(r=>Math.abs(r.y-y)<3.5);if(!row){row={y,items:[]};rows.push(row)}row.items.push({x,width:item.width||0,str:item.str.trim(),font:Math.abs(item.transform?.[3]||10),end:item.hasEOL})}return rows.sort((a,b)=>b.y-a.y).map(row=>{row.items.sort((a,b)=>a.x-b.x);let line='',last=null;for(const item of row.items){if(last){const gap=item.x-(last.x+last.width);if(gap>Math.max(last.font,item.font)*.35&&!line.endsWith(' '))line+=' ';if(last.end&&!line.endsWith(' '))line+=' '}line+=item.str;last=item}return line.trim()}).filter(Boolean).join('\n')}
 async function readPdf(pdfFile){if(!window.pdfjsLib)throw new Error('PDF機能を読み込めません。通信状態を確認してください。');pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';const pdf=await pdfjsLib.getDocument({data:new Uint8Array(await pdfFile.arrayBuffer())}).promise;if(pdf.numPages>20)throw new Error('一度に読み取れるPDFは20ページまでです。ページを分けてください。');let worker;const texts=[];try{for(let n=1;n<=pdf.numPages;n++){const page=await pdf.getPage(n),content=await page.getTextContent(),embedded=pdfTextByLines(content.items);let pageText=embedded;if(embedded.replace(/\s/g,'').length<30){if(!worker)worker=await makeOcrWorker();$('status').textContent=`PDF ${n}/${pdf.numPages}ページを高画質で読み取り中…`;const base=page.getViewport({scale:1}),scale=Math.min(4,3000/base.width,4000/base.height),viewport=page.getViewport({scale}),canvas=document.createElement('canvas');canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);await page.render({canvasContext:canvas.getContext('2d',{willReadFrequently:true}),viewport}).promise;pageText=await recognizeDocument(canvas,worker);canvas.width=0;canvas.height=0}else $('status').textContent=`PDF ${n}/${pdf.numPages}ページの文字を確認中…`;$('bar').style.width=Math.round(n/pdf.numPages*100)+'%';texts.push(`【${n}ページ】\n${pageText}`)}return texts.join('\n\n')}finally{if(worker)await worker.terminate()}}
 $('clear').onclick=()=>{$('deliveryDocument').value='要確認';$('invoiceRequired').value='要確認';selected=null;for(const input of fileInputs)input.value='';$('newOrderPanel').classList.add('hidden');$('results').classList.add('hidden');$('preview').style.display='none';$('pdfPreview').style.display='none';$('bar').style.width='0';$('status').textContent='注文書を撮影するか、PDF・JPEGを選択してください';$('read').textContent='読み取り開始';$('raw').textContent='';for(const id of ['product','store','count','date','time','tea','packing','bags','trash','allergy','remarks','amount'])$(id).value='';$('copied').textContent='';window.scrollTo({top:0,behavior:'smooth'})};
