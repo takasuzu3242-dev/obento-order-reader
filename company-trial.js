@@ -3,15 +3,15 @@
  const trial=new URLSearchParams(location.search).get('trial')==='1';
  const card=document.createElement('section');card.className='card';card.id='companyTrial';
  if(!trial){
-  const a=document.createElement('a');a.href='?trial=1';a.textContent='他社向けお試し入口（自分のお店の参加コードは渡さない）';a.className='tip';
+  const a=document.createElement('a');a.href='?trial=1';a.textContent='会社・店舗ごとの利用はこちら';a.className='tip';
   card.append(a);document.querySelector('main').append(card);return;
  }
- document.title='お弁当注文カレンダー｜会社別お試し';
+ document.title='お弁当注文カレンダー｜会社・店舗別';
  $('chappyImport')?.classList.add('hidden');
  $('salesHeading').textContent='お弁当売上集計';
  document.querySelector('.hero h1').textContent='お弁当注文カレンダー';
- document.querySelector('.hero p').textContent='会社ごとのお試し。パスワード不要。';
- card.innerHTML='<h2 class="section-title">お店のお試しを始める</h2><p class="tip">初めての会社は、会社・店舗名を入力して開始してください。すでにご利用中の会社のスタッフは、その会社の参加コードで参加してください。</p><div id="trialSetup"><div class="field"><label for="trialName">会社・店舗名</label><input id="trialName" maxlength="100" placeholder="例：〇〇弁当"></div><div class="controls"><button id="trialCreate" type="button">自分の会社用に始める</button></div><details style="margin-top:16px"><summary>会社の参加コードを持っている方</summary><div class="field"><label for="trialCode">自分の会社の参加コード</label><input id="trialCode" autocomplete="off" maxlength="128"></div><div class="controls"><button id="trialJoin" type="button">自分の会社に参加する</button></div></details></div><div id="trialCompany" class="hidden"><strong id="trialCompanyName"></strong><p class="tip">同じ会社のスタッフには下の参加コードを伝えてください。参加コードを知っている方は、この会社の注文を閲覧・変更できます。</p><p id="trialCompanyCode" style="overflow-wrap:anywhere;font-weight:700"></p></div><p id="trialStatus" role="status" aria-live="polite"></p><p class="tip">ブラウザーや端末を変えるときも、自分の会社の参加コードを使います。コードを控えてください。チャッピーの契約は不要です。</p>';
+ document.querySelector('.hero p').textContent='会社・店舗ごとに注文を管理できます。';
+ card.innerHTML='<h2 class="section-title">お店の利用を始める</h2><p class="tip">初めての会社は、会社・店舗名を入力して開始してください。すでにご利用中の会社のスタッフは、その会社の参加コードで参加してください。</p><div id="trialSetup"><div class="field"><label for="trialName">会社・店舗名</label><input id="trialName" maxlength="100" placeholder="例：〇〇弁当"></div><div class="controls"><button id="trialCreate" type="button">自分の会社用に始める</button></div><details style="margin-top:16px"><summary>会社の参加コードを持っている方</summary><div class="field"><label for="trialCode">自分の会社の参加コード</label><input id="trialCode" autocomplete="off" maxlength="128"></div><div class="controls"><button id="trialJoin" type="button">自分の会社に参加する</button></div></details></div><div id="trialCompany" class="hidden"><strong id="trialCompanyName"></strong><p class="tip">同じ会社のスタッフには下の参加コードを伝えてください。参加コードを知っている方は、この会社の注文を閲覧・変更できます。</p><p id="trialCompanyCode" style="overflow-wrap:anywhere;font-weight:700"></p></div><p id="trialStatus" role="status" aria-live="polite"></p><p class="tip">ブラウザーや端末を変えるときも、自分の会社の参加コードを使います。コードを控えてください。チャッピーの契約は不要です。</p>';
  document.querySelector('.hero').insertAdjacentElement('afterend',card);
  $('connectionSetup').closest('section').style.display='none';
  // Keep the logout/reload controls available without exposing technical setup.
