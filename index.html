@@ -18,16 +18,16 @@
 <section class="card" aria-labelledby="salesHeading"><h2 id="salesHeading" class="section-title">さとみ用 お弁当売上集計</h2><p class="tip">お届け日を基準に、お弁当代＋お茶代（税込）を集計します。上のカレンダーの月切替で過去の月も確認できます。</p><div class="status"><span id="salesMonth">この月の売上合計</span><strong id="salesTotal" style="display:block;font-size:28px;margin-top:4px">—</strong><span id="salesNotice" style="display:block;margin-top:6px" role="status"></span></div><details style="margin-top:16px"><summary>日別の売上を見る</summary><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;text-align:left"><thead><tr><th style="padding:10px 8px">お届け日</th><th>注文</th><th>売上金額</th></tr></thead><tbody id="salesRows"></tbody></table></div></details></section>
 <section id="newOrderPanel" class="hidden">
 <section class="card"><h2 class="section-title">注文書を追加</h2><p class="tip">カメラ撮影、PDF、JPEGから選べます。読み取りはこのブラウザー内で行います。</p><div class="controls source-actions"><button type="button" id="cameraSource">📷 カメラで撮影</button><button type="button" id="pdfSource" class="secondary">PDFを選択</button><button type="button" id="jpegSource" class="secondary">JPEGを選択</button></div><input id="cameraFile" type="file" accept="image/*" capture="environment" hidden><input id="pdfFile" type="file" accept="application/pdf,.pdf" hidden><input id="jpegFile" type="file" accept="image/jpeg,.jpg,.jpeg" hidden><div id="selectedFile" class="file-label hidden"></div><img id="preview" alt="選択した注文書"><div id="pdfPreview" class="pdf-preview"><strong>PDFファイル</strong><span id="pdfName"></span></div><div class="controls"><button id="read" disabled>読み取り開始</button><button id="clear" class="secondary" type="button">キャンセル</button><span id="status">注文書を撮影するか、PDF・JPEGを選択してください</span></div><div class="progress"><i id="bar"></i></div><p class="tip">写真やPDFはこのブラウザー内で処理し、サーバーには送信しません。</p></section>
-<section id="results" class="card hidden"><h2 class="section-title">読み取り結果 <span class="badge">自由に修正できます</span></h2><p id="parseWarnings" class="status hidden" role="status" style="white-space:pre-line;color:#8a4300;background:#fff3da"></p><div class="grid">
+<section id="results" class="card hidden"><h2 class="section-title">読み取り結果 <span class="badge">自由に修正できます</span></h2><p id="parseWarnings" class="status hidden" role="status" style="white-space:pre-line;color:#8a4300;background:#fff3da"></p><div class="grid"><div class="field"><label>お届け日</label><input id="date" placeholder="例：2026/10/29"></div><div class="field"><label>お弁当の個数</label><input id="count" placeholder="例：13個"></div><div class="field wide"><label for="amount">お弁当代＋お茶代の売上合計（税込・円）</label><input id="amount" type="text" inputmode="numeric" placeholder="例：15600"><p class="tip">注文書の合計金額を読み取ります。配達料などが含まれる場合は、お弁当代＋お茶代（税込）に修正してください。単価・小計は使いません。空欄や複数の合計がある場合は、注文書を確認して入力してください。</p></div>
 <div class="field"><label>商品名・お弁当名</label><input id="product" placeholder="読み取り結果"></div><div class="field"><label>店名</label><input id="store" placeholder="読み取り結果"></div>
-<div class="field"><label>お弁当の個数</label><input id="count" placeholder="例：13個"></div><div class="field"><label>ご飯の種類</label><input id="rice" placeholder="白ご飯・わかめご飯"></div><div class="field"><label>お届け日</label><input id="date" placeholder="例：10月13日（火）"></div>
+<div class="field"><label>ご飯の種類</label><input id="rice" placeholder="白ご飯・わかめご飯"></div>
 <div class="field"><label>お届け時間</label><input id="time" placeholder="例：17:30"></div><div class="field"><label>お茶</label><input id="tea" placeholder="例：無料・おーいお茶"></div>
 <div class="field"><label>梱包方法・納品時の姿</label><input id="packing" placeholder="段ボール・紙袋・おまかせ等"></div><div class="field"><label>小分け袋</label><input id="bags" placeholder="必要・不要・記載なし"></div>
 <div class="field"><label>ゴミ袋</label><input id="trash" placeholder="必要・不要・記載なし"></div><div class="field"><label>アレルギー</label><input id="allergy" placeholder="内容・なし・記載なし"></div>
 <div class="field"><label for="deliveryDocument">納品書</label><select id="deliveryDocument"><option value="要確認">要確認</option><option value="必要">あり</option><option value="不要">なし</option></select></div><div class="field"><label for="invoiceRequired">請求書</label><select id="invoiceRequired"><option value="要確認">要確認</option><option value="必要">あり</option><option value="不要">なし</option></select></div>
-<div class="field wide"><label for="amount">お弁当代＋お茶代の売上合計（税込・円）</label><input id="amount" type="number" min="0" step="1" inputmode="numeric" placeholder="例：15600"><p class="tip">注文書の合計金額を読み取ります。配達料などが含まれる場合は、お弁当代＋お茶代（税込）に修正してください。単価・小計は使いません。空欄や複数の合計がある場合は、注文書を確認して入力してください。</p></div>
+
 <div class="field wide"><label for="remarks">備考</label><textarea id="remarks" rows="3" placeholder="伝達事項・注意点など（任意）"></textarea></div>
-</div><div class="controls"><button id="copy" class="secondary">結果をコピー</button><button id="saveOrder">共有カレンダーに登録</button><button id="calendar" class="secondary">iPhoneカレンダーに追加</button><span id="copied" class="tip"></span></div><p class="tip">備考と読み取り項目を共有します。添付した注文書（氏名・住所等を含む場合あり）も、共有メンバーが閲覧できる非公開領域に保存します。</p></section>
+</div><div class="controls"><button id="copy" class="secondary">結果をコピー</button><button id="saveOrder">共有カレンダーに登録</button><button id="saveWithoutFile" type="button" class="secondary hidden">添付なしで注文だけ保存</button><button id="calendar" class="secondary">iPhoneカレンダーに追加</button><span id="copied" class="tip" role="status" aria-live="polite"></span></div><p class="tip">備考と読み取り項目を共有します。添付した注文書（氏名・住所等を含む場合あり）も、共有メンバーが閲覧できる非公開領域に保存します。</p></section>
 <details class="card"><summary>OCR読み取りテキスト（確認用）</summary><pre id="raw" class="raw"></pre></details>
 <p class="tip">読み取り結果は誤認識することがあります。特に日付、数量、アレルギーは注文書と照らしてご確認ください。「記載なし」は写真から該当情報を確認できない場合に表示します。</p>
 </section>
@@ -65,6 +65,36 @@ function normalizeOrderText(text){
  // OCR inserts spaces inside Japanese labels and names. Preserve line and column boundaries.
  for(let i=0;i<3;i++)value=value.replace(/([一-鿿ぁ-ゖァ-ヺー々])[ \t]+(?=[一-鿿ぁ-ゖァ-ヺー々])/g,'$1');
  return value.replace(/(\d)[ \t]*,[ \t]*(?=\d{3}(?:\D|$))/g,'$1,');
+}
+function parseDeliveryDate(value,defaultYear=new Date().getFullYear()){
+ const s=normalizeOrderText(value);
+ const full=s.match(/(20\d{2})\s*(?:年|[-/.])\s*(\d{1,2})\s*(?:月|[-/.])\s*(\d{1,2})(?!\d)(?:\s*日)?/),short=!full&&s.match(/(?:^|[^\d])(\d{1,2})\s*(?:月|[/])\s*(\d{1,2})(?!\d)(?:\s*日)?/);
+ if(!full&&!short)return null;
+ const y=full?Number(full[1]):defaultYear,m=Number(full?full[2]:short[1]),d=Number(full?full[3]:short[2]),date=new Date(Date.UTC(y,m-1,d));
+ if(date.getUTCFullYear()!==y||date.getUTCMonth()!==m-1||date.getUTCDate()!==d)return null;
+ return y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+}
+function parseDeliveryTime(value){
+ const s=normalizeOrderText(value),m=s.match(/(?:^|[^\d])([01]?\d|2[0-3])\s*[:：時]\s*([0-5]?\d)(?:\s*分)?(?!\d)/)||s.match(/(?:^|[^\d])([01]?\d|2[0-3])\s*時(?:\s*ちょうど|頃|ごろ)?(?:$|[^\d])/);
+ return m?m[1].padStart(2,'0')+':'+String(m[2]||'0').padStart(2,'0'):null;
+}
+function normalizeSalesValue(value){
+ const s=normalizeOrderText(value).replace(/[,，\s¥￥円]/g,'');
+ return /^\d+$/.test(s)&&Number.isSafeInteger(Number(s))?String(Number(s)):null;
+}
+function extractImportantFields(text){
+ const t=normalizeOrderText(text),fields={},warnings=[];
+ const dateLabels=[...t.matchAll(/(?:お届け(?:日時|日|予定日)|配達(?:日時|日)|納品(?:日時|日))\s*[:：]?\s*([\s\S]{0,100})/g)];
+ for(const label of dateLabels){const date=parseDeliveryDate(label[1]);if(date){fields.date=date;const time=parseDeliveryTime(label[1]);if(time)fields.time=time;break}}
+ if(!fields.date){const dates=[...t.matchAll(/20\d{2}\s*(?:年|[-/.])\s*\d{1,2}\s*(?:月|[-/.])\s*\d{1,2}(?:\s*日)?/g)].map(m=>parseDeliveryDate(m[0])).filter(Boolean),unique=[...new Set(dates)];if(unique.length===1){fields.date=unique[0];warnings.push('日付の見出しを認識できなかったため、本文の日付を候補として入力しました。お届け日か確認してください。')}}
+ const quantityArea=t.match(/(?:商品名|お弁当名|商品情報)([\s\S]{0,600})/)?.[1]||t;
+ const beforeTea=quantityArea.split(/ドリンク|無料お茶|\n\s*お茶|オプション|備品/)[0];
+ const counts=[...beforeTea.matchAll(/(?:個数|数量|注文数|お弁当の個数)\s*[:：]?\s*(\d+)\s*(?:個|食|人前|ケ|こ)?/g)].map(m=>Number(m[1])).filter(n=>n>0&&Number.isSafeInteger(n));
+ if(counts.length&&new Set(counts).size===1)fields.count=counts[0]+'個';
+ if(!fields.count){const pair=beforeTea.match(/[\d,]+\s*円\s*[×xX✕✖*]\s*(\d+)\s*(?:個|食)/);if(pair&&Number(pair[1])>0)fields.count=pair[1]+'個'}
+ const totals=[];for(const line of t.split('\n')){if(/割引前/.test(line))continue;const m=line.match(/(?:【|\[)?(?:ご請求金額|お支払(?:い)?金額|総合計(?:金額)?|合計金額|合計)(?:】|\])?\s*[:：]?\s*[¥￥]?\s*([\d,]+)\s*(?:円|$)/);if(m&&!/消費税|税抜|税別|小計/.test(line)&&!/[8８10０]%合計/.test(line.slice(0,m.index))){const value=normalizeSalesValue(m[1]);if(value!==null)totals.push(value)}}
+ if(new Set(totals).size===1)fields.amount=totals[0];
+ return {fields,warnings};
 }
 function fallbackOrderFields(text){
  const t=normalizeOrderText(text),lines=t.split('\n').map(x=>x.trim()).filter(Boolean),fields={};
@@ -135,10 +165,11 @@ function extractOrderFields(text){
 function parse(text){
  const normalized=normalizeOrderText(text);
  if(!normalized.trim())throw new Error('文字を読み取れませんでした。ピント・明るさを確認して撮り直すか、元のPDFを選んでください。');
- const fallback=fallbackOrderFields(normalized);
+ const fallback=fallbackOrderFields(normalized),important=extractImportantFields(normalized);
  let extracted;
  try{extracted=extractOrderFields(normalized)}catch(error){console.error('Order layout parsing failed',error);extracted={fields:{},warnings:['注文書の書式を認識できませんでした。読み取れた項目を表示しています。内容を確認してください。']}}
- const fields={...extracted.fields},warnings=[...extracted.warnings];
+ const fields={...extracted.fields},warnings=[...extracted.warnings,...important.warnings];
+ for(const [id,value] of Object.entries(important.fields)){if(value&&(!fields[id]||id==='date')&&!(id==='amount'&&/割引前|一致しません/.test(warnings.join(' '))))fields[id]=value;}
  for(const [id,value] of Object.entries(fallback)){if(!fields[id]&&value&&!(id==='amount'&&/割引前|一致しません/.test(warnings.join(' '))))fields[id]=value}
  // Commit only after extraction succeeds, so a parser failure cannot erase the form.
  for(const id of ['product','store','count','rice','date','time','tea','packing','bags','trash','allergy','remarks','amount']){const el=$(id);if(el)el.value=fields[id]||''}
@@ -164,8 +195,8 @@ $('clear').onclick=()=>{$('deliveryDocument').value='要確認';$('invoiceRequir
 // 新規発注の日付を変更したら、前の日の入力個数を引き継がない。
 $('date').addEventListener('input',()=>{$('count').value='';$('copied').textContent='お届け日を変更しました。お弁当の個数を入力し直してください。';});
 $('copy').onclick=async()=>{const labels=[['商品名・お弁当名','product'],['店名','store'],['お弁当の個数','count'],['ご飯の種類','rice'],['お届け日','date'],['お届け時間','time'],['お茶','tea'],['梱包方法・納品時の姿','packing'],['小分け袋','bags'],['ゴミ袋','trash'],['アレルギー','allergy'],['納品書','deliveryDocument'],['請求書','invoiceRequired'],['売上合計（円）','amount'],['備考','remarks']];const s=labels.map(([a,b])=>`${a}：${documentStatusText($(b).value)||'記載なし'}`).join('\n');try{await navigator.clipboard.writeText(s);$('copied').textContent='コピーしました'}catch{$('copied').textContent='コピーできませんでした。項目を選択してコピーしてください'}};
-$('calendar').onclick=()=>{let d=$('date').value.trim(),tm=$('time').value.trim();let dm=d.match(/(20\d{2})\s*年?\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日/)||d.match(/(\d{1,2})\s*月\s*(\d{1,2})\s*日/);if(!dm){$('copied').textContent='日付を「2026年10月13日」の形式で入力してください';return}let year=dm.length===4?+dm[1]:new Date().getFullYear(),month=dm.length===4?+dm[2]:+dm[1],day=dm.length===4?+dm[3]:+dm[2];let hm=tm.match(/([01]?\d|2[0-3]):([0-5]\d)/);if(!hm){$('copied').textContent='時刻を「17:30」の形式で入力してください';return}const pad=n=>String(n).padStart(2,'0'),start=`${year}${pad(month)}${pad(day)}T${pad(+hm[1])}${hm[2]}00`,endDate=new Date(year,month-1,day,+hm[1],+hm[2]+30),end=`${endDate.getFullYear()}${pad(endDate.getMonth()+1)}${pad(endDate.getDate())}T${pad(endDate.getHours())}${pad(endDate.getMinutes())}00`,esc=s=>String(s).replace(/\\/g,'\\\\').replace(/\r?\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;'),summary=`お弁当納品：${$('store').value} ${$('product').value} ${$('count').value}`,details=[`店名：${$('store').value}`,`商品名：${$('product').value}`,`個数：${$('count').value}`,`ご飯：${$('rice').value}`,`お茶：${$('tea').value}`,`梱包：${$('packing').value}`,`小分け袋：${$('bags').value}`,`ゴミ袋：${$('trash').value}`,`アレルギー：${$('allergy').value}`,`納品書：${documentStatusText($('deliveryDocument').value)}`,`請求書：${documentStatusText($('invoiceRequired').value)}`,`売上合計（円）：${$('amount').value||'未入力'}`,`備考：${$('remarks').value}`].join('\n'),ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Obento Order Reader//JA','CALSCALE:GREGORIAN','BEGIN:VEVENT',`UID:${Date.now()}@obento-reader`,`DTSTAMP:${new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'')}`,`DTSTART:${start}`,`DTEND:${end}`,`SUMMARY:${esc(summary)}`,`DESCRIPTION:${esc(details)}`,'END:VEVENT','END:VCALENDAR'].join('\r\n'),blob=new Blob([ics],{type:'text/calendar;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='お弁当納品予定.ics';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);$('copied').textContent='カレンダー予定を作成しました。ファイルを開いて登録してください'};
-function dateFromForm(){const s=$('date').value, m=s.match(/(20\d{2})\s*年?\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日/)||s.match(/(\d{1,2})\s*月\s*(\d{1,2})\s*日/);if(!m)return null;return `${m.length===4?m[1]:new Date().getFullYear()}-${String(m.length===4?m[2]:m[1]).padStart(2,'0')}-${String(m.length===4?m[3]:m[2]).padStart(2,'0')}`}
+$('calendar').onclick=()=>{const dayValue=dateFromForm(),timeValue=parseDeliveryTime($('time').value);if(!dayValue||!timeValue){$('copied').textContent='お届け日と時間を入力してください';return}const [year,month,day]=dayValue.split('-').map(Number),hm=['',...timeValue.split(':')];const pad=n=>String(n).padStart(2,'0'),start=`${year}${pad(month)}${pad(day)}T${pad(+hm[1])}${hm[2]}00`,endDate=new Date(year,month-1,day,+hm[1],+hm[2]+30),end=`${endDate.getFullYear()}${pad(endDate.getMonth()+1)}${pad(endDate.getDate())}T${pad(endDate.getHours())}${pad(endDate.getMinutes())}00`,esc=s=>String(s).replace(/\\/g,'\\\\').replace(/\r?\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;'),summary=`お弁当納品：${$('store').value} ${$('product').value} ${$('count').value}`,details=[`店名：${$('store').value}`,`商品名：${$('product').value}`,`個数：${$('count').value}`,`ご飯：${$('rice').value}`,`お茶：${$('tea').value}`,`梱包：${$('packing').value}`,`小分け袋：${$('bags').value}`,`ゴミ袋：${$('trash').value}`,`アレルギー：${$('allergy').value}`,`納品書：${documentStatusText($('deliveryDocument').value)}`,`請求書：${documentStatusText($('invoiceRequired').value)}`,`売上合計（円）：${$('amount').value||'未入力'}`,`備考：${$('remarks').value}`].join('\n'),ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Obento Order Reader//JA','CALSCALE:GREGORIAN','BEGIN:VEVENT',`UID:${Date.now()}@obento-reader`,`DTSTAMP:${new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'')}`,`DTSTART:${start}`,`DTEND:${end}`,`SUMMARY:${esc(summary)}`,`DESCRIPTION:${esc(details)}`,'END:VEVENT','END:VCALENDAR'].join('\r\n'),blob=new Blob([ics],{type:'text/calendar;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='お弁当納品予定.ics';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);$('copied').textContent='カレンダー予定を作成しました。ファイルを開いて登録してください'};
+function dateFromForm(){return parseDeliveryDate($('date').value)}
 function dateKey(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function orderCountTotal(items){let total=0;for(const item of items){const raw=String(item.count??'').replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/[ ,，]/g,'');const match=raw.match(/^\s*(\d+)\s*(?:個)?\s*$/);if(!match)return null;total+=Number(match[1])}return total}
 function documentStatusText(value){return value==='必要'?'あり':value==='不要'?'なし':value}
@@ -291,7 +322,65 @@ $('reloadOrders').onclick=()=>sessionUser?refreshGroup():startCloud();
 $('connect').onclick=async()=>{const url=$('projectUrl').value.trim(),key=$('publishableKey').value.trim();if(!url.startsWith('https://')||!key){$('cloudStatus').textContent='Project URLとPublishable keyを入力してください';return}if(!writeCloudSetting('obento-supabase',JSON.stringify({url,key}))){$('cloudStatus').textContent='ブラウザーの保存領域を利用できません。Safariの設定を確認してください';return}await startCloud()};
 $('anonymousStart').onclick=async()=>{if(!db)return;$('anonymousStart').disabled=true;$('authStatus').textContent='利用準備中…';try{const client=db,{data,error}=await client.auth.signInAnonymously();if(client!==db)return;if(error)throw error;if(sessionUser?.id!==data.user.id)resetSession(data.user);await refreshGroup()}catch(error){$('authStatus').textContent='開始できません: '+error.message}finally{$('anonymousStart').disabled=false}};$('createGroup').onclick=async()=>{const {data,error}=await db.rpc('create_order_group',{p_name:$('groupName').value.trim()||'お弁当注文'});$('groupStatus').textContent=error?error.message:'共有カレンダーを作成しました';if(!error)await refreshGroup()};
 $('joinGroup').onclick=async()=>{const {data,error}=await db.rpc('join_order_group',{p_invite_code:$('inviteCode').value.trim()});$('groupStatus').textContent=error?error.message:'共有カレンダーに参加しました';if(!error){writeCloudSetting('obento-group:'+db.supabaseUrl,data);await refreshGroup()}};
-$('saveOrder').onclick=async()=>{if(!db||!sessionUser||!currentGroup){$('copied').textContent='Supabase接続後、「パスワードなしで利用開始」して共有グループに参加してください';return}const delivery_date=dateFromForm(),delivery_time=$('time').value.match(/([01]?\d|2[0-3]):([0-5]\d)/);if(!delivery_date||!delivery_time){$('copied').textContent='お届け日と時刻を確認してください';return}const amount=$('amount').value.trim();if(amount&&(!/^\d+$/.test(amount)||!Number.isSafeInteger(Number(amount)))){$('copied').textContent='売上合計は0以上の整数で入力してください';return}let imagePath=null;if(selected){const safeName=selected.name.replace(/[^a-zA-Z0-9._-]/g,'_').slice(-80)||'order-form';imagePath=`${currentGroup.id}/${crypto.randomUUID()}-${safeName}`;const contentType=selected.type||(selected.name.toLowerCase().endsWith('.pdf')?'application/pdf':'image/jpeg');const {error:uploadError}=await db.storage.from('order-forms').upload(imagePath,selected,{contentType,upsert:false});if(uploadError){$('copied').textContent='注文書を保存できませんでした。管理者はSupabase設定SQLを実行してください: '+uploadError.message;return}}const item={group_id:currentGroup.id,created_by:sessionUser.id,delivery_date,delivery_time:`${delivery_time[1].padStart(2,'0')}:${delivery_time[2]}:00`,store:$('store').value.trim(),product:$('product').value.trim(),count:$('count').value.trim(),rice_type:$('rice').value.trim(),tea:$('tea').value.trim(),packing:$('packing').value.trim(),bags:$('bags').value.trim(),trash_bag:$('trash').value.trim(),allergy:$('allergy').value.trim(),remarks:[$('remarks').value.trim(),'納品書：'+$('deliveryDocument').value,'請求書：'+$('invoiceRequired').value,amount?'【さとみ売上合計】'+Number(amount)+'円':''].filter(Boolean).join('\n'),image_path:imagePath};const {error}=await db.from('orders').insert(item);$('copied').textContent=error?'登録できませんでした。Supabase設定SQLの実行が必要な場合があります: '+error.message:'共有カレンダーに登録しました';if(error&&imagePath)await db.storage.from('order-forms').remove([imagePath]);if(!error){selectedDate=new Date(`${delivery_date}T12:00:00`);viewMonth=new Date(selectedDate.getFullYear(),selectedDate.getMonth(),1);await loadOrders();$('newOrderPanel').classList.add('hidden');window.scrollTo({top:0,behavior:'smooth'})}};
+let orderSaveBusy=false,pendingOrderSave=null;
+function orderUUID(){
+ if(globalThis.crypto?.randomUUID)return globalThis.crypto.randomUUID();
+ if(!globalThis.crypto?.getRandomValues)throw new Error('このブラウザーでは保存機能を利用できません。SafariまたはChromeで開いてください。');
+ const a=globalThis.crypto.getRandomValues(new Uint8Array(16));a[6]=(a[6]&15)|64;a[8]=(a[8]&63)|128;const h=Array.from(a,n=>n.toString(16).padStart(2,'0')).join('');return h.slice(0,8)+'-'+h.slice(8,12)+'-'+h.slice(12,16)+'-'+h.slice(16,20)+'-'+h.slice(20);
+}
+function saveInputError(id,message){$('copied').textContent=message;$(id).focus();return false}
+async function saveNewOrder(withoutFile=false){
+ if(orderSaveBusy)return;
+ if(!db||!sessionUser||!currentGroup){$('copied').textContent='共有カレンダーに接続し、参加コードでグループに参加してから保存してください。';$('connectionSetup').open=true;return}
+ const delivery_date=dateFromForm(),time=parseDeliveryTime($('time').value);
+ if(!delivery_date)return saveInputError('date','お届け日を入力してください。例：2026/10/29（日本語の日付も使えます）');
+ if(!time)return saveInputError('time','お届け時間を入力してください。例：12:00 または12時00分');
+ const rawCount=normalizeOrderText($('count').value).replace(/[,，\s]/g,''),count=rawCount.match(/^(\d+)(?:個|食|人前)?$/);
+ if(!count||Number(count[1])<=0||!Number.isSafeInteger(Number(count[1])))return saveInputError('count','お弁当の個数を入力してください。例：22個');
+ const rawAmount=$('amount').value.trim(),amount=rawAmount?normalizeSalesValue(rawAmount):'';
+ if(rawAmount&&amount===null)return saveInputError('amount','合計金額を0以上の整数で入力してください。例：35,640円');
+ const client=db,group=currentGroup.id,user=sessionUser.id,file=withoutFile?null:selected;
+ const item={group_id:group,created_by:user,delivery_date,delivery_time:time+':00',store:$('store').value.trim(),product:$('product').value.trim(),count:Number(count[1])+'個',rice_type:$('rice').value.trim(),tea:$('tea').value.trim(),packing:$('packing').value.trim(),bags:$('bags').value.trim(),trash_bag:$('trash').value.trim(),allergy:$('allergy').value.trim(),remarks:[$('remarks').value.trim(),'納品書：'+$('deliveryDocument').value,'請求書：'+$('invoiceRequired').value,amount!==''?'【さとみ売上合計】'+amount+'円':''].filter(Boolean).join('\n'),image_path:null};
+ const fingerprint=JSON.stringify(item)+'|'+(file?[file.name,file.size,file.lastModified].join('|'):'no-file');
+ const active=()=>db===client&&sessionUser?.id===user&&currentGroup?.id===group;
+ orderSaveBusy=true;$('saveOrder').disabled=true;$('saveWithoutFile').disabled=true;$('saveWithoutFile').classList.add('hidden');
+ let stage='準備',pending;
+ try{
+  // Confirm uncertain writes before allowing a second order, even if fields changed.
+  if(pendingOrderSave?.attempted&&pendingOrderSave.group===group&&pendingOrderSave.user===user){
+   stage='保存結果の確認';const check=await client.from('orders').select('id').eq('group_id',group).eq('id',pendingOrderSave.id).maybeSingle();if(check.error)throw check.error;
+   if(check.data){$('copied').textContent='前回の注文は保存済みです。カレンダーを確認してください。';pendingOrderSave=null;await loadOrders();return}
+  }
+  if(!pendingOrderSave||pendingOrderSave.fingerprint!==fingerprint)pendingOrderSave={id:orderUUID(),group,user,fingerprint,imagePath:null,attempted:false};
+  pending=pendingOrderSave;
+  if(file&&!pending.imagePath){
+   stage='注文書の添付';$('copied').textContent='注文書を保存しています…';
+   if(file.size>15*1024*1024)throw new Error('注文書は15MB以下にしてください。注文だけ保存することもできます。');
+   const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_').slice(-80)||'order-form',imagePath=group+'/'+orderUUID()+'-'+safeName;
+   const contentType=file.type||(/\.pdf$/i.test(file.name)?'application/pdf':/\.png$/i.test(file.name)?'image/png':'image/jpeg');
+   const upload=await client.storage.from('order-forms').upload(imagePath,file,{contentType,upsert:false});
+   if(upload.error)throw upload.error;pending.imagePath=imagePath;
+  }
+  if(!active())throw new Error('接続先またはログイン状態が変わりました。再読み込みして確認してください。');
+  item.id=pending.id;item.image_path=pending.imagePath;
+  stage='注文データの登録';$('copied').textContent='日付・個数・合計金額を保存しています…';pending.attempted=true;
+  const inserted=await client.from('orders').insert(item).select('id').single();
+  if(inserted.error)throw inserted.error;if(!inserted.data?.id)throw new Error('保存結果を確認できませんでした。もう一度保存を押して確認してください。');
+  pendingOrderSave=null;$('date').value=delivery_date;$('time').value=time;$('count').value=item.count;if(amount!=='')$('amount').value=amount;
+  if(!active())return;
+  selectedDate=new Date(delivery_date+'T12:00:00');viewMonth=new Date(selectedDate.getFullYear(),selectedDate.getMonth(),1);
+  await loadOrders();$('cloudStatus').textContent=withoutFile?'注文を保存しました（注文書の添付なし）':'日付・個数・合計金額を保存しました';
+  $('copied').textContent=$('cloudStatus').textContent;$('newOrderPanel').classList.add('hidden');window.scrollTo({top:0,behavior:'smooth'});
+ }catch(error){
+  console.error('Order save failed',stage,error);
+  const message=error?.message||String(error),permission=/row.level|permission|JWT|token|not authorized/i.test(message)?'ログイン状態と共有グループへの参加を確認してください。 ':'';
+  $('copied').textContent=stage+'で保存できませんでした。'+permission+message+' 入力内容は残しています。';
+  if(stage==='注文書の添付'){$('saveWithoutFile').classList.remove('hidden');$('copied').textContent+='「添付なしで注文だけ保存」も選べます。'}
+ }finally{orderSaveBusy=false;$('saveOrder').disabled=false;$('saveWithoutFile').disabled=false}
+}
+$('saveOrder').onclick=()=>saveNewOrder(false);
+$('saveWithoutFile').onclick=()=>saveNewOrder(true);
+
 $('prevMonth').onclick=()=>{viewMonth=new Date(viewMonth.getFullYear(),viewMonth.getMonth()-1,1);selectedDate=new Date(viewMonth.getFullYear(),viewMonth.getMonth(),1);renderCalendar();loadOrders()};$('nextMonth').onclick=()=>{viewMonth=new Date(viewMonth.getFullYear(),viewMonth.getMonth()+1,1);selectedDate=new Date(viewMonth.getFullYear(),viewMonth.getMonth(),1);renderCalendar();loadOrders()};document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')loadOrders()});setInterval(loadOrders,60000);startCloud();
 if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js');
 </script><div id="orderEdit" class="order-edit hidden" role="dialog" aria-modal="true" aria-labelledby="orderEditTitle"><form id="orderEditForm" class="order-edit-panel"><h2 id="orderEditTitle">保存した注文を修正</h2><p>添付した注文書は残ります。保存するまで変更されません。</p><label>お届け日<input id="edit_delivery_date" type="date" required></label><label>お届け時間<input id="edit_delivery_time" type="time" required></label><label>店名<input id="edit_store" maxlength="1000"></label><label>商品名・お弁当名<input id="edit_product" maxlength="1000"></label><label>個数<input id="edit_count" maxlength="1000"></label><label>ご飯の種類<input id="edit_rice_type" maxlength="1000"></label><label>お茶<input id="edit_tea" maxlength="1000"></label><label>梱包<input id="edit_packing" maxlength="1000"></label><label>小分け袋<input id="edit_bags" maxlength="1000"></label><label>ゴミ袋<input id="edit_trash_bag" maxlength="1000"></label><label>アレルギー<input id="edit_allergy" maxlength="1000"></label><label>納品書<select id="edit_deliveryDocument"><option>要確認</option><option value="必要">あり</option><option value="不要">なし</option></select></label><label>請求書<select id="edit_invoiceRequired"><option>要確認</option><option value="必要">あり</option><option value="不要">なし</option></select></label><label>お弁当代＋お茶代の売上合計（税込・円）<input id="edit_amount" type="number" min="0" step="1"><span>空欄にすると金額を未入力に戻します。</span></label><label>備考<textarea id="edit_remarks" maxlength="5000" rows="4"></textarea></label><p id="orderEditStatus" role="status" aria-live="polite"></p><div class="order-edit-footer"><button id="cancelOrderEdit" type="button" class="secondary">キャンセル</button><button id="saveOrderEdit" type="submit">修正を保存</button></div></form></div><script>
