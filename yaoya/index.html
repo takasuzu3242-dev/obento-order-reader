@@ -99,12 +99,44 @@ function openPhotoSave(){if(!imageFile||!imageDataURL){message('先に注文画�
 function closePhotoSave(){$('#photo-save-view').hidden=true;document.body.classList.remove('photo-save-open');}
 async function shareOrderImage(){if(!imageFile)return;try{if(typeof navigator.share!=='function'||(typeof navigator.canShare==='function'&&!navigator.canShare({files:[imageFile]}))){openPhotoSave();return;}await navigator.share({files:[imageFile],title:'YAMANAKA 発注書'});}catch(e){if(e.name!=='AbortError'){openPhotoSave();$('#photo-save-guide').textContent='このブラウザでは共有できませんでした。下の画像を長押しして「写真に保存」「画像を保存」を選んでください。';}}}
 function wrap(ctx,text,x,y,maxWidth,lineHeight,maxLines){let line='',lines=[];for(const ch of text){if(ch==='\n'||ctx.measureText(line+ch).width>maxWidth){lines.push(line);line=ch==='\n'?'':ch;}else line+=ch;}if(line)lines.push(line);lines.slice(0,maxLines).forEach((l,i)=>ctx.fillText(l,x,y+i*lineHeight));if(lines.length>maxLines)ctx.fillText('…（続きは別途連絡）',x,y+(maxLines-1)*lineHeight);}
+const invoiceKey = 'yaoya-invoices-v1';
+function invoiceRecords() {
+ try { return JSON.parse(localStorage.getItem(invoiceKey) || '{}') || {}; } catch { return {}; }
+}
+function importInvoiceLink() {
+ const params = new URLSearchParams(location.hash.slice(1));
+ if (!params.has('invoice')) return;
+ try {
+  const incoming = JSON.parse(params.get('invoice'));
+  if (!Array.isArray(incoming) || incoming.length < 1 || incoming.length > 12) throw Error();
+  const records = invoiceRecords();
+  for (const row of incoming) {
+   const values = [row.negi, row.shiraga, row.negiYen, row.shiragaYen, row.tax, row.total];
+   if (!STORES.includes(row.store) || !/^\d{4}-(0[1-9]|1[0-2])$/.test(row.month) ||
+       !values.every(n => Number.isSafeInteger(n) && n >= 0 && n <= 10000000) ||
+       row.negiYen + row.shiragaYen + row.tax !== row.total) throw Error();
+   records[row.month + '|' + row.store] = row;
+  }
+  localStorage.setItem(invoiceKey, JSON.stringify(records));
+  params.delete('invoice');
+  history.replaceState(null, '', location.pathname + location.search + (params.size ? '#' + params : ''));
+  const first = incoming[0];
+  store = first.store;
+  calendarMonth = first.month;
+  selectedDate = first.month + '-01';
+  week = monday(selectedDate);
+  tab = 'fax';
+  message('請求書の集計をこのブラウザに取り込みました。店舗と月を選んで発注画像を作成してください。');
+ } catch { message('請求書の集計を取り込めませんでした。ブラウザの保存設定をご確認ください。', true); }
+}
+importInvoiceLink();
 async function makeImage(){
  if(dirty||settingsDirty){message('先に変更を保存してください。',true);return;}
  const selected=[store];
+ const invoice=invoiceRecords()[calendarMonth+'|'+store];
  const first=calendarMonth+'-01',base=new Date(first+'T12:00:00+09:00'),count=new Date(base.getFullYear(),base.getMonth()+1,0).getDate(),offset=(base.getDay()+6)%7,weekRows=Math.ceil((offset+count)/7);
  const quantity=(date,s)=>{const i=(new Date(date+'T12:00:00+09:00').getDay()+6)%7;if(i===6)return null;return state.orders[monday(date)+'|'+s]?.rows[i];};
- if(!Array.from({length:count},(_,i)=>calendarMonth+'-'+String(i+1).padStart(2,'0')).some(d=>selected.some(s=>quantity(d,s)?.some(q=>q!=='')))){message('表示中の月に保存済みの注文がありません。',true);return;}
+ if(!invoice && !Array.from({length:count},(_,i)=>calendarMonth+'-'+String(i+1).padStart(2,'0')).some(d=>selected.some(s=>quantity(d,s)?.some(q=>q!=='')))){message('表示中の月に保存済みの注文がありません。',true);return;}
  if(!state.settings.supplier||!state.settings.fax){message('設定画面で八百屋さんの名前とFAX番号を保存してください。',true);return;}
  const c=document.createElement('canvas');c.width=3508;c.height=2480;const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);ctx.fillStyle='#000';ctx.strokeStyle='#000';ctx.lineWidth=2;ctx.textBaseline='middle';ctx.textAlign='center';ctx.font='bold 65px Meiryo, sans-serif';ctx.fillText('大丸食品発注書',1754,90);ctx.font='bold 48px Meiryo, sans-serif';ctx.fillText(calendarMonth.slice(0,4)+'年 '+Number(calendarMonth.slice(5))+'月',1754,175);
  ctx.textAlign='left';ctx.font='35px Meiryo, sans-serif';ctx.fillText(state.settings.supplier+' 御中',75,155);ctx.fillText('FAX：'+state.settings.fax,75,211);
@@ -112,7 +144,7 @@ async function makeImage(){
  senderLine('発注元：'+sender.name,130,62);
  const phones=sender.phone.split(/\s*\/\s*/);phones.forEach((phone,i)=>senderLine('TEL：'+phone,200+i*60,60));
  ctx.font='26px Meiryo, sans-serif';ctx.fillText('空欄・— は注文なし。日曜は配達なし。',75,277);
- const x=75,y=320,w=3358,cellW=w/7,headH=65,cellH=(1870-headH)/weekRows;
+ const x=75,y=320,w=3358,cellW=w/7,headH=65,cellH=(1790-headH)/weekRows;
  const weekdays=['月','火','水','木','金','土','日'];ctx.textAlign='center';ctx.font='bold 33px Meiryo, sans-serif';
  weekdays.forEach((day,i)=>{ctx.fillStyle='#eee';ctx.fillRect(x+i*cellW,y,cellW,headH);ctx.strokeRect(x+i*cellW,y,cellW,headH);ctx.fillStyle='#000';ctx.fillText(day,x+(i+.5)*cellW,y+headH/2);});
  for(let cell=0;cell<weekRows*7;cell++){
@@ -127,7 +159,23 @@ async function makeImage(){
  ctx.textAlign='right';const numberSize=Math.min(90,Math.floor(line*.92));
  values.forEach((v,j)=>{let size=numberSize;ctx.font='bold '+size+'px Meiryo, sans-serif';while(ctx.measureText(v).width>cellW*.46&&size>30){size-=2;ctx.font='bold '+size+'px Meiryo, sans-serif';}ctx.fillText(v,valueX,top+line*(j+.45));});ctx.textAlign='left';});
  }
- ctx.textAlign='left';selected.forEach((s,i)=>{const contact=state.settings.contacts?.[s]||PRESETCONTACTS[s],xx=75+i*w/selected.length;ctx.font='bold 28px Meiryo, sans-serif';ctx.fillText(s,xx,2255);ctx.font='25px Meiryo, sans-serif';ctx.fillText(contact.name,xx,2300);wrap(ctx,'TEL '+contact.phone,xx,2345,w/selected.length-25,33,2);});
+ ctx.textAlign='left';
+ const totals=[0,0];
+ for(let n=1;n<=count;n++){
+  const q=quantity(calendarMonth+'-'+String(n).padStart(2,'0'),store);
+  totals.forEach((_,i)=>{totals[i]+=Number(q?.[i]||0);});
+ }
+ const num=n=>Number(n).toLocaleString('ja-JP');
+ ctx.strokeRect(75,2140,3358,245);
+ ctx.font='bold 40px Meiryo, sans-serif';
+ ctx.fillText('発注集計（税抜見込み・10月請求書の単価を使用）',105,2190);
+ ctx.fillText('ねぎ '+num(totals[0])+' kg × 680円 ＝ '+num(totals[0]*680)+'円',105,2250);
+ ctx.fillText('白髪ねぎ '+num(totals[1])+' 袋 × 380円 ＝ '+num(totals[1]*380)+'円',105,2310);
+ if(invoice){
+  ctx.fillText('請求書実績  '+calendarMonth+'・'+store,1760,2190);
+  ctx.fillText('ねぎ '+num(invoice.negi)+' kg '+num(invoice.negiYen)+'円 ／ 白髪ねぎ '+num(invoice.shiraga)+' 袋 '+num(invoice.shiragaYen)+'円',1760,2250,1640);
+  ctx.fillText('税抜 '+num(invoice.negiYen+invoice.shiragaYen)+'円 ＋ 税 '+num(invoice.tax)+'円 ＝ 税込 '+num(invoice.total)+'円',1760,2310,1640);
+ }
  const blob=await new Promise(resolve=>c.toBlob(resolve,'image/png'));if(!blob){message('画像を作成できませんでした。',true);return;}
  invalidateImage();imageURL=URL.createObjectURL(blob);imageFile=new File([blob],'大丸食品発注書_'+store+'_'+calendarMonth+'.png',{type:'image/png'});imageDataURL=c.toDataURL('image/png');$('#preview').src=imageDataURL;$('#download').href='#photo-save';$('#download').removeAttribute('download');$('#photo-file').href=imageDataURL;$('#photo-file').download=imageFile.name;$('#image-result').hidden=false;$('#share').disabled=false;message('1か月分のカレンダー発注書を作成しました。内容を確認して保存してください。FAXはまだ送信されていません。');
 }
